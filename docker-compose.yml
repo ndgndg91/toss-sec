@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: toss-trader-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: giri
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: toss_trader
+    volumes:
+      # 프로젝트 루트 하위의 db-data 디렉토리에 데이터 영속화
+      - ./db-data:/var/lib/postgresql/data

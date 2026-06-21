@@ -1,0 +1,39 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: toss-dca-trader
+  datasource:
+    url: jdbc:postgresql://localhost:5432/toss_trader
+    username: giri
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+toss:
+  api:
+    # Bitwarden CLI로 주입할 API Key 매핑
+    client-id: ${TOSS_SEC_API_KEY}
+    client-secret: ${TOSS_SEC_SECRET_KEY}
+    # 실거래 API URL (실제 운영 시 사용)
+    base-url: https://openapi.tossinvest.com
+    # 모의투자/테스트용 API URL (샌드박스)
+    sandbox-url: https://openapi-sandbox.tossinvest.com
+    # 사용 환경: sandbox 또는 real
+    mode: sandbox
+
+trader:
+  dca:
+    # 매수 대상 종목 (예: 애플 AAPL 또는 삼성전자 005930)
+    ticker: AAPL
+    # 기본 매수 금액 (원화 기준, 정밀도 보장을 위해 BigDecimal 형태로 처리됨)
+    base-amount: 10000.00
+    # 최대 일일 주문 금액 한도 (안전장치)
+    max-daily-budget: 50000.00

@@ -1,0 +1,13 @@
+.gradle/
+build/
+out/
+.idea/
+*.log
+
+# Local DB Data (Docker volume mount)
+db-data/
+
+# Local Environment Variables & Credentials
+.envrc
+.env
+local.properties
