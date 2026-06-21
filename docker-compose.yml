@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:17
     container_name: toss-trader-db
+    restart: always
     ports:
       - "5432:5432"
     environment:
@@ -14,6 +15,7 @@ services:
   app:
     build: .
     container_name: toss-dca-trader-app
+    restart: always
     ports:
       - "8080:8080"
     environment:
@@ -22,5 +24,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       TOSS_SEC_API_KEY: ${TOSS_SEC_API_KEY}
       TOSS_SEC_SECRET_KEY: ${TOSS_SEC_SECRET_KEY}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      TRADER_NOTIFICATION_EMAIL: ${TRADER_NOTIFICATION_EMAIL}
     depends_on:
       - postgres

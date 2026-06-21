@@ -84,6 +84,13 @@ export BW_SESSION=$(bw unlock --raw)
 # 2. API Key 조회하여 환경변수 등록
 export TOSS_SEC_API_KEY=$(bw get notes toss_sec_api_key)
 export TOSS_SEC_SECRET_KEY=$(bw get notes toss_sec_secret_key)
+
+# 3. 이메일 알림 연동 환경변수 등록 (Gmail 예시)
+export SPRING_MAIL_USERNAME="my-email@gmail.com"
+# 구글 2차인증용 앱비밀번호(App Password) 입력 권장
+export SPRING_MAIL_PASSWORD="my-app-password"
+export TRADER_NOTIFICATION_EMAIL="receiver-email@gmail.com"
+
 ```
 
 ### 3. 애플리케이션 실행

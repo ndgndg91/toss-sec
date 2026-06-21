@@ -29,6 +29,9 @@ class DcaTradingServiceTest {
     @Mock
     private lateinit var dcaConfigRepository: DcaConfigRepository
 
+    @Mock
+    private lateinit var mailService: MailService
+
     private lateinit var dcaTradingService: DcaTradingService
 
     @BeforeEach
@@ -37,13 +40,15 @@ class DcaTradingServiceTest {
             defaultBaseAmount = BigDecimal("10000.00"),
             defaultMaxDailyBudget = BigDecimal("15000.00"),
             cron = "0 0 0 * * TUE-SAT",
-            dryRun = false
+            dryRun = false,
+            notificationEmail = "giri@example.com"
         )
 
         dcaTradingService = DcaTradingService(
             tossApiClient = tossApiClient,
             orderHistoryRepository = orderHistoryRepository,
             dcaConfigRepository = dcaConfigRepository,
+            mailService = mailService,
             dcaProperties = properties
         )
     }

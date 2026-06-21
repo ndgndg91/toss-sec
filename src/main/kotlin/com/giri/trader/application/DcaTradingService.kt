@@ -16,6 +16,7 @@ class DcaTradingService(
     private val tossApiClient: TossApiClient,
     private val orderHistoryRepository: OrderHistoryRepository,
     private val dcaConfigRepository: DcaConfigRepository,
+    private val mailService: MailService,
     private val dcaProperties: DcaProperties
 ) {
     private val log = LoggerFactory.getLogger(DcaTradingService::class.java)
@@ -23,8 +24,11 @@ class DcaTradingService(
 
     fun executeDcaOrder() {
         val dryRun = dcaProperties.dryRun
+        val emailRecipient = dcaProperties.notificationEmail
         log.info("Starting Multi-Stock DCA Order Execution Flow (Dry-Run: {})", dryRun)
         
+        val executedHistories = mutableListOf<OrderHistory>()
+
         try {
             // 1. 토스증권에서 현재 투자/보유 중인 주식 목록 조회
             val holdingsResponse = tossApiClient.getHoldings()
@@ -63,11 +67,11 @@ class DcaTradingService(
                     val currentPrice = Money(priceResponse.currentPrice)
                     val previousClosePrice = Money(priceResponse.previousClosePrice)
 
-                    // 2-2. 하락률 비례 매수액 계산
+                    // 3-2. 하락률 비례 매수액 계산
                     var orderAmount = dcaStrategy.calculateOrderAmount(baseAmount, currentPrice, previousClosePrice)
                     log.info("[{}] Calculated dynamic order amount: {} (Base: {})", ticker, orderAmount, baseAmount)
 
-                    // 2-3. 안전장치 (종목별 최대 예매 한도 캡핑)
+                    // 3-3. 안전장치 (종목별 최대 예매 한도 캡핑)
                     if (orderAmount.isGreaterThan(maxDailyBudget)) {
                         log.warn("[{}] Calculated amount {} exceeds max budget {}. Capping to limit.", ticker, orderAmount, maxDailyBudget)
                         orderAmount = maxDailyBudget
@@ -78,7 +82,7 @@ class DcaTradingService(
                         continue
                     }
 
-                    // 2-4. DB에 PENDING 기록
+                    // 3-4. DB에 PENDING 기록
                     val history = orderHistoryRepository.save(
                         OrderHistory(
                             ticker = ticker,
@@ -89,24 +93,27 @@ class DcaTradingService(
                         )
                     )
 
-                    // 2-5. 주문 전송 (dry-run 여부에 따른 조건부 분기) 및 DB 상태 업데이트
+                    // 3-5. 주문 전송 (dry-run 여부에 따른 조건부 분기) 및 DB 상태 업데이트
                     try {
                         if (dryRun) {
                             val mockOrderId = "DRY-RUN-${java.util.UUID.randomUUID()}"
                             history.orderId = mockOrderId
                             history.status = "DRY_RUN"
-                            orderHistoryRepository.save(history)
+                            val savedHistory = orderHistoryRepository.save(history)
+                            executedHistories.add(savedHistory)
                             log.info("[DRY-RUN] [{}] Order simulated successfully. Virtual OrderID: {}", ticker, mockOrderId)
                         } else {
                             val orderResponse = tossApiClient.placeOrder(ticker, orderAmount.amount)
                             history.orderId = orderResponse.result.orderId
                             history.status = "SUCCESS"
-                            orderHistoryRepository.save(history)
+                            val savedHistory = orderHistoryRepository.save(history)
+                            executedHistories.add(savedHistory)
                             log.info("[{}] DCA Order placed successfully. OrderID: {}", ticker, orderResponse.result.orderId)
                         }
                     } catch (e: Exception) {
                         history.status = "FAIL"
-                        orderHistoryRepository.save(history)
+                        val savedHistory = orderHistoryRepository.save(history)
+                        executedHistories.add(savedHistory)
                         log.error("[{}] Failed to place order", ticker, e)
                     }
 
@@ -115,8 +122,16 @@ class DcaTradingService(
                 }
             }
 
+            // 4. 스케줄 수행 후 이메일 일일 리포트 발송
+            if (executedHistories.isNotEmpty() && emailRecipient.isNotBlank()) {
+                mailService.sendDailyReport(emailRecipient, executedHistories)
+            }
+
         } catch (e: Exception) {
             log.error("Failed to execute holdings-based DCA trading flow", e)
+            if (emailRecipient.isNotBlank()) {
+                mailService.sendErrorReport(emailRecipient, e.stackTraceToString())
+            }
             throw e
         }
     }
