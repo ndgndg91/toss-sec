@@ -15,13 +15,14 @@ class DcaTradingService(
     private val tossApiClient: TossApiClient,
     private val orderHistoryRepository: OrderHistoryRepository,
     @Value("\${trader.dca.base-amount}") private val baseAmountRaw: Double,
-    @Value("\${trader.dca.max-daily-budget}") private val maxDailyBudgetRaw: Double
+    @Value("\${trader.dca.max-daily-budget}") private val maxDailyBudgetRaw: Double,
+    @Value("\${trader.dca.dry-run}") private val dryRun: Boolean
 ) {
     private val log = LoggerFactory.getLogger(DcaTradingService::class.java)
     private val dcaStrategy = DcaStrategy()
 
     fun executeDcaOrder() {
-        log.info("Starting Multi-Stock DCA Order Execution Flow")
+        log.info("Starting Multi-Stock DCA Order Execution Flow (Dry-Run: {})", dryRun)
         
         val baseAmount = Money.of(baseAmountRaw)
         val maxDailyBudget = Money.of(maxDailyBudgetRaw)
@@ -75,17 +76,25 @@ class DcaTradingService(
                         )
                     )
 
-                    // 2-5. 주문 전송 및 DB 상태 업데이트
+                    // 2-5. 주문 전송 (dry-run 여부에 따른 조건부 분기) 및 DB 상태 업데이트
                     try {
-                        val orderResponse = tossApiClient.placeOrder(ticker, orderAmount.amount)
-                        history.orderId = orderResponse.orderId
-                        history.status = "SUCCESS"
-                        orderHistoryRepository.save(history)
-                        log.info("[{}] DCA Order placed successfully. OrderID: {}", ticker, orderResponse.orderId)
+                        if (dryRun) {
+                            val mockOrderId = "DRY-RUN-${java.util.UUID.randomUUID()}"
+                            history.orderId = mockOrderId
+                            history.status = "DRY_RUN"
+                            orderHistoryRepository.save(history)
+                            log.info("[DRY-RUN] [{}] Order simulated successfully. Virtual OrderID: {}", ticker, mockOrderId)
+                        } else {
+                            val orderResponse = tossApiClient.placeOrder(ticker, orderAmount.amount)
+                            history.orderId = orderResponse.orderId
+                            history.status = "SUCCESS"
+                            orderHistoryRepository.save(history)
+                            log.info("[{}] DCA Order placed successfully. OrderID: {}", ticker, orderResponse.orderId)
+                        }
                     } catch (e: Exception) {
                         history.status = "FAIL"
                         orderHistoryRepository.save(history)
-                        log.error("[{}] Failed to place order on Toss API", ticker, e)
+                        log.error("[{}] Failed to place order", ticker, e)
                     }
 
                 } catch (e: Exception) {

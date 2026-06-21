@@ -12,18 +12,12 @@ class TossTokenManager(
     private val tossRestClient: RestClient,
     @Value("\${toss.api.client-id}") private val clientId: String,
     @Value("\${toss.api.client-secret}") private val clientSecret: String,
-    @Value("\${toss.api.base-url}") private val baseUrl: String,
-    @Value("\${toss.api.sandbox-url}") private val sandboxUrl: String,
-    @Value("\${toss.api.mode}") private val mode: String
+    @Value("\${toss.api.base-url}") private val baseUrl: String
 ) {
     private val log = LoggerFactory.getLogger(TossTokenManager::class.java)
     
     private var cachedToken: String? = null
     private var tokenExpiredAt: Instant? = null
-
-    private fun getApiUrl(): String {
-        return if (mode.lowercase() == "real") baseUrl else sandboxUrl
-    }
 
     @Synchronized
     fun getAccessToken(): String {
@@ -33,12 +27,12 @@ class TossTokenManager(
             return cachedToken!!
         }
 
-        log.info("Requesting new Toss API Access Token... [mode: {}]", mode)
+        log.info("Requesting new Toss API Access Token...")
         val traceId = UUID.randomUUID().toString()
 
         try {
             val response = tossRestClient.post()
-                .uri("${getApiUrl()}/v1/oauth2/token")
+                .uri("${baseUrl}/v1/oauth2/token")
                 .header("traceId", traceId)
                 .body(mapOf(
                     "grant_type" to "client_credentials",

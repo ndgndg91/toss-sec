@@ -11,15 +11,9 @@ import java.util.UUID
 class TossApiClient(
     private val tossRestClient: RestClient,
     private val tokenManager: TossTokenManager,
-    @Value("\${toss.api.base-url}") private val baseUrl: String,
-    @Value("\${toss.api.sandbox-url}") private val sandboxUrl: String,
-    @Value("\${toss.api.mode}") private val mode: String
+    @Value("\${toss.api.base-url}") private val baseUrl: String
 ) {
     private val log = LoggerFactory.getLogger(TossApiClient::class.java)
-
-    private fun getApiUrl(): String {
-        return if (mode.lowercase() == "real") baseUrl else sandboxUrl
-    }
 
     fun getHoldings(): TossHoldingsResponse {
         val traceId = UUID.randomUUID().toString()
@@ -28,7 +22,7 @@ class TossApiClient(
         log.info("Fetching holding stocks [traceId: {}]", traceId)
 
         val response = tossRestClient.get()
-            .uri("${getApiUrl()}/v1/trading/holdings")
+            .uri("${baseUrl}/v1/trading/holdings")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .retrieve()
@@ -50,7 +44,7 @@ class TossApiClient(
         log.info("Fetching price for ticker: {} [traceId: {}]", ticker, traceId)
 
         val response = tossRestClient.get()
-            .uri("${getApiUrl()}/v1/market/realtime-price?ticker=$ticker")
+            .uri("${baseUrl}/v1/market/realtime-price?ticker=$ticker")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .retrieve()
@@ -80,7 +74,7 @@ class TossApiClient(
         )
 
         val response = tossRestClient.post()
-            .uri("${getApiUrl()}/v1/trading/order")
+            .uri("${baseUrl}/v1/trading/order")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .body(requestBody)

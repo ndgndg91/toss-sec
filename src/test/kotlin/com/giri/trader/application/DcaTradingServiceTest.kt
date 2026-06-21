@@ -29,12 +29,13 @@ class DcaTradingServiceTest {
 
     @BeforeEach
     fun setUp() {
-        // Base Amount = 10000.00, Max Daily Budget = 15000.00 설정
+        // Base Amount = 10000.00, Max Daily Budget = 15000.00 설정, dryRun = false
         dcaTradingService = DcaTradingService(
             tossApiClient = tossApiClient,
             orderHistoryRepository = orderHistoryRepository,
             baseAmountRaw = 10000.00,
-            maxDailyBudgetRaw = 15000.00
+            maxDailyBudgetRaw = 15000.00,
+            dryRun = false
         )
     }
 
