@@ -31,14 +31,17 @@ class TossTokenManager(
         val traceId = UUID.randomUUID().toString()
 
         try {
+            val bodyMap = org.springframework.util.LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "client_credentials")
+                add("client_id", clientId)
+                add("client_secret", clientSecret)
+            }
+
             val response = tossRestClient.post()
-                .uri("${baseUrl}/v1/oauth2/token")
+                .uri("${baseUrl}/oauth2/token")
                 .header("traceId", traceId)
-                .body(mapOf(
-                    "grant_type" to "client_credentials",
-                    "client_id" to clientId,
-                    "client_secret" to clientSecret
-                ))
+                .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
+                .body(bodyMap)
                 .retrieve()
                 .body(TossTokenResponse::class.java)
 
