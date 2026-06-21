@@ -5,9 +5,9 @@ spring:
   application:
     name: toss-dca-trader
   datasource:
-    url: jdbc:postgresql://localhost:5432/toss_trader
-    username: giri
-    password: password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/toss_trader}
+    username: ${SPRING_DATASOURCE_USERNAME:giri}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
