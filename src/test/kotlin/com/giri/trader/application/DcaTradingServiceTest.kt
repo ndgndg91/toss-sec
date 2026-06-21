@@ -2,9 +2,7 @@ package com.giri.trader.application
 
 import com.giri.trader.domain.OrderHistory
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
-import com.giri.trader.infrastructure.toss.TossApiClient
-import com.giri.trader.infrastructure.toss.TossOrderResponse
-import com.giri.trader.infrastructure.toss.TossPriceResponse
+import com.giri.trader.infrastructure.toss.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -43,9 +41,11 @@ class DcaTradingServiceTest {
     @DisplayName("일반적인 하락 시나리오에서 가중치가 반영된 주문을 전송하고 DB에 성공 이력을 남겨야 함")
     fun should_place_weighted_order_when_price_drops() {
         // given
-        val mockHoldings = com.giri.trader.infrastructure.toss.TossHoldingsResponse(
-            holdings = listOf(
-                com.giri.trader.infrastructure.toss.TossHoldingStock("AAPL", BigDecimal.TEN, BigDecimal("100.00"))
+        val mockHoldings = TossHoldingsResponse(
+            result = TossHoldingsResult(
+                items = listOf(
+                    TossHoldingStock("AAPL", BigDecimal.TEN, BigDecimal("100.00"))
+                )
             )
         )
         val mockPriceResponse = TossPriceResponse(
@@ -54,8 +54,10 @@ class DcaTradingServiceTest {
             previousClosePrice = BigDecimal("100.00")
         )
         val mockOrderResponse = TossOrderResponse(
-            orderId = "ORD-001",
-            status = "SUCCESS"
+            result = TossOrderResult(
+                orderId = "ORD-001",
+                clientOrderId = null
+            )
         )
 
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)
@@ -77,9 +79,11 @@ class DcaTradingServiceTest {
     @DisplayName("계산된 주문 금액이 최대 예산 한도를 초과하면 최대 예산까지만 주문을 넣어야 함")
     fun should_cap_order_amount_to_max_budget_when_exceeding() {
         // given
-        val mockHoldings = com.giri.trader.infrastructure.toss.TossHoldingsResponse(
-            holdings = listOf(
-                com.giri.trader.infrastructure.toss.TossHoldingStock("AAPL", BigDecimal.TEN, BigDecimal("100.00"))
+        val mockHoldings = TossHoldingsResponse(
+            result = TossHoldingsResult(
+                items = listOf(
+                    TossHoldingStock("AAPL", BigDecimal.TEN, BigDecimal("100.00"))
+                )
             )
         )
         val mockPriceResponse = TossPriceResponse(
@@ -88,8 +92,10 @@ class DcaTradingServiceTest {
             previousClosePrice = BigDecimal("100.00")
         )
         val mockOrderResponse = TossOrderResponse(
-            orderId = "ORD-002",
-            status = "SUCCESS"
+            result = TossOrderResult(
+                orderId = "ORD-002",
+                clientOrderId = null
+            )
         )
 
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)

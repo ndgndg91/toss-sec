@@ -15,21 +15,54 @@ class TossApiClient(
 ) {
     private val log = LoggerFactory.getLogger(TossApiClient::class.java)
 
-    fun getHoldings(): TossHoldingsResponse {
+    @Volatile
+    private var cachedAccountSeq: Long? = null
+
+    @Synchronized
+    private fun getAccountSeq(): Long {
+        if (cachedAccountSeq != null) {
+            return cachedAccountSeq!!
+        }
+
         val traceId = UUID.randomUUID().toString()
         val token = tokenManager.getAccessToken()
 
-        log.info("Fetching holding stocks [traceId: {}]", traceId)
+        log.info("Fetching accounts to resolve accountSeq [traceId: {}]", traceId)
+
+        val response = tossRestClient.get()
+            .uri("${baseUrl}/api/v1/accounts")
+            .header("Authorization", "Bearer $token")
+            .header("traceId", traceId)
+            .retrieve()
+            .body(TossAccountsResponse::class.java)
+
+        val account = response?.result?.firstOrNull()
+            ?: throw IllegalStateException("No brokerage account found in Toss account list [traceId: $traceId]")
+
+        cachedAccountSeq = account.accountSeq
+        log.info("Resolved and cached accountSeq: {} for AccountNo: {} [traceId: {}]", 
+            cachedAccountSeq, account.accountNo, traceId)
+
+        return cachedAccountSeq!!
+    }
+
+    fun getHoldings(): TossHoldingsResponse {
+        val traceId = UUID.randomUUID().toString()
+        val token = tokenManager.getAccessToken()
+        val accountSeq = getAccountSeq()
+
+        log.info("Fetching holding stocks for accountSeq: {} [traceId: {}]", accountSeq, traceId)
 
         val response = tossRestClient.get()
             .uri("${baseUrl}/api/v1/holdings")
             .header("Authorization", "Bearer $token")
+            .header("X-Tossinvest-Account", accountSeq.toString())
             .header("traceId", traceId)
             .retrieve()
             .body(TossHoldingsResponse::class.java)
 
         if (response != null) {
-            log.info("Successfully fetched holdings. Count: {} [traceId: {}]", response.holdings.size, traceId)
+            log.info("Successfully fetched holdings. Count: {} [traceId: {}]", response.result.items.size, traceId)
             return response
         } else {
             log.error("Failed to retrieve holdings data (empty response) [traceId: {}]", traceId)
@@ -84,28 +117,30 @@ class TossApiClient(
     fun placeOrder(ticker: String, amount: BigDecimal): TossOrderResponse {
         val traceId = UUID.randomUUID().toString()
         val token = tokenManager.getAccessToken()
+        val accountSeq = getAccountSeq()
 
-        log.info("Placing order for ticker: {}, Amount: {} [traceId: {}]", ticker, amount, traceId)
+        log.info("Placing order for ticker: {}, Amount: {}, AccountSeq: {} [traceId: {}]", 
+            ticker, amount, accountSeq, traceId)
 
         val requestBody = TossOrderRequest(
-            ticker = ticker,
+            symbol = ticker,
             side = "BUY",
-            amount = amount,
-            priceType = "MARKET"
+            orderType = "MARKET",
+            orderAmount = amount
         )
 
-        // 주문 엔드포인트도 실제 스펙에 맞춰 /api/v1/orders로 매핑
         val response = tossRestClient.post()
             .uri("${baseUrl}/api/v1/orders")
             .header("Authorization", "Bearer $token")
+            .header("X-Tossinvest-Account", accountSeq.toString())
             .header("traceId", traceId)
             .body(requestBody)
             .retrieve()
             .body(TossOrderResponse::class.java)
 
         if (response != null) {
-            log.info("Order placed successfully. OrderID: {}, Status: {} [traceId: {}]", 
-                response.orderId, response.status, traceId)
+            log.info("Order placed successfully. OrderID: {} [traceId: {}]", 
+                response.result.orderId, traceId)
             return response
         } else {
             log.error("Failed to place order (empty response) [traceId: {}]", traceId)

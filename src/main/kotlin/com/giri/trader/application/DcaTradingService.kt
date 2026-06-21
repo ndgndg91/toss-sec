@@ -30,7 +30,7 @@ class DcaTradingService(
         try {
             // 1. 토스증권에서 현재 투자/보유 중인 주식 목록 조회
             val holdingsResponse = tossApiClient.getHoldings()
-            val holdingStocks = holdingsResponse.holdings
+            val holdingStocks = holdingsResponse.result.items
 
             if (holdingStocks.isEmpty()) {
                 log.info("No holding stocks found in Toss account. Skipping DCA flow.")
@@ -41,7 +41,7 @@ class DcaTradingService(
 
             // 2. 각 종목별로 루프를 돌며 동적 가중치 분할 매수 실행
             for (stock in holdingStocks) {
-                val ticker = stock.ticker
+                val ticker = stock.symbol
                 try {
                     log.info("Processing DCA for Ticker: {}", ticker)
 
@@ -86,10 +86,10 @@ class DcaTradingService(
                             log.info("[DRY-RUN] [{}] Order simulated successfully. Virtual OrderID: {}", ticker, mockOrderId)
                         } else {
                             val orderResponse = tossApiClient.placeOrder(ticker, orderAmount.amount)
-                            history.orderId = orderResponse.orderId
+                            history.orderId = orderResponse.result.orderId
                             history.status = "SUCCESS"
                             orderHistoryRepository.save(history)
-                            log.info("[{}] DCA Order placed successfully. OrderID: {}", ticker, orderResponse.orderId)
+                            log.info("[{}] DCA Order placed successfully. OrderID: {}", ticker, orderResponse.result.orderId)
                         }
                     } catch (e: Exception) {
                         history.status = "FAIL"
