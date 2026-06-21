@@ -31,8 +31,6 @@ toss:
 
 trader:
   dca:
-    # 매수 대상 종목 (예: 애플 AAPL 또는 삼성전자 005930)
-    ticker: AAPL
     # 기본 매수 금액 (원화 기준)
     base-amount: 10000.00
     # 최대 일일 주문 금액 한도 (안전장치)

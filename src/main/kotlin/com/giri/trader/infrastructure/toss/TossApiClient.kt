@@ -21,6 +21,28 @@ class TossApiClient(
         return if (mode.lowercase() == "real") baseUrl else sandboxUrl
     }
 
+    fun getHoldings(): TossHoldingsResponse {
+        val traceId = UUID.randomUUID().toString()
+        val token = tokenManager.getAccessToken()
+
+        log.info("Fetching holding stocks [traceId: {}]", traceId)
+
+        val response = tossRestClient.get()
+            .uri("${getApiUrl()}/v1/trading/holdings")
+            .header("Authorization", "Bearer $token")
+            .header("traceId", traceId)
+            .retrieve()
+            .body(TossHoldingsResponse::class.java)
+
+        if (response != null) {
+            log.info("Successfully fetched holdings. Count: {} [traceId: {}]", response.holdings.size, traceId)
+            return response
+        } else {
+            log.error("Failed to retrieve holdings data (empty response) [traceId: {}]", traceId)
+            throw IllegalStateException("Empty response from Toss Trading API for holdings")
+        }
+    }
+
     fun getRealtimePrice(ticker: String): TossPriceResponse {
         val traceId = UUID.randomUUID().toString()
         val token = tokenManager.getAccessToken()
