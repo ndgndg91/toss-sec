@@ -11,8 +11,8 @@ class DcaScheduler(
 ) {
     private val log = LoggerFactory.getLogger(DcaScheduler::class.java)
 
-    // 매주 월~금 15:00:00 (KST 기준 국내 주식 장마감 전 또는 해외주식 프리마켓 전 등) 실행
-    @Scheduled(cron = "0 0 15 * * MON-FRI")
+    // application.yml 에 설정된 cron 주기에 따라 자동 실행
+    @Scheduled(cron = "\${trader.dca.cron}")
     fun triggerDcaTrading() {
         log.info("DcaScheduler triggered. Running automated trade...")
         try {
