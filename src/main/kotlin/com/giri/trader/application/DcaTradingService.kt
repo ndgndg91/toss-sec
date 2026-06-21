@@ -4,6 +4,7 @@ import com.giri.trader.config.DcaProperties
 import com.giri.trader.domain.DcaStrategy
 import com.giri.trader.domain.Money
 import com.giri.trader.domain.OrderHistory
+import com.giri.trader.infrastructure.persistence.DcaConfigRepository
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
 import com.giri.trader.infrastructure.toss.TossApiClient
 import org.slf4j.LoggerFactory
@@ -14,6 +15,7 @@ import java.math.BigDecimal
 class DcaTradingService(
     private val tossApiClient: TossApiClient,
     private val orderHistoryRepository: OrderHistoryRepository,
+    private val dcaConfigRepository: DcaConfigRepository,
     private val dcaProperties: DcaProperties
 ) {
     private val log = LoggerFactory.getLogger(DcaTradingService::class.java)
@@ -33,22 +35,30 @@ class DcaTradingService(
                 return
             }
 
-            log.info("Found {} stocks to execute DCA.", holdingStocks.size)
+            log.info("Found {} stocks in Toss portfolio.", holdingStocks.size)
 
-            // 2. 각 종목별로 루프를 돌며 동적 가중치 분할 매수 실행
+            // 2. DB에서 보유 종목들의 dca_config 설정 로드
+            val symbols = holdingStocks.map { it.symbol }
+            val dbConfigs = dcaConfigRepository.findAllById(symbols).associateBy { it.symbol }
+
+            // 3. 각 종목별로 루프를 돌며 동적 가중치 분할 매수 실행
             for (stock in holdingStocks) {
                 val ticker = stock.symbol
                 try {
+                    // 3-0. DB 설정 매칭 확인
+                    val config = dbConfigs[ticker]
+                    if (config == null) {
+                        log.info("[{}] No DCA configuration found in DB. Skipping auto-trade for this stock.", ticker)
+                        continue
+                    }
+
                     log.info("Processing DCA for Ticker: {}", ticker)
+                    val baseAmount = Money(config.baseAmount)
+                    val maxDailyBudget = Money(config.maxDailyBudget)
 
-                    // 2-0. 해당 종목의 설정값을 DcaProperties에서 탐색 (없으면 default 값 사용)
-                    val setting = dcaProperties.settings[ticker]
-                    val baseAmount = setting?.baseAmount?.let { Money(it) } ?: Money(dcaProperties.defaultBaseAmount)
-                    val maxDailyBudget = setting?.maxDailyBudget?.let { Money(it) } ?: Money(dcaProperties.defaultMaxDailyBudget)
+                    log.info("[{}] RDBMS Config resolved: BaseAmount={}, MaxDailyBudget={}", ticker, baseAmount, maxDailyBudget)
 
-                    log.info("[{}] Configuration resolved: BaseAmount={}, MaxDailyBudget={}", ticker, baseAmount, maxDailyBudget)
-
-                    // 2-1. 해당 종목 시세 조회
+                    // 3-1. 해당 종목 시세 조회
                     val priceResponse = tossApiClient.getRealtimePrice(ticker)
                     val currentPrice = Money(priceResponse.currentPrice)
                     val previousClosePrice = Money(priceResponse.previousClosePrice)

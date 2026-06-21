@@ -16,8 +16,9 @@
 
 ## ✨ 핵심 기능 상세
 
-1. **보유 주식 자동 감지 (Multi-Stock Loop)**
-   - `application.yml`에 종목 코드를 하드코딩하지 않고, 계좌 보유 주식 조회 API를 호출하여 현재 투자 중인 모든 종목을 대상으로 루프를 돌며 자동으로 DCA를 수행함.
+1. **보유 주식 자동 감지 및 DB 매핑**
+   - 계좌 보유 주식 조회 API를 호출하여 현재 투자 중인 모든 종목을 가져온 뒤, 로컬 PostgreSQL DB의 `dca_config` 테이블에 등록된 종목들만 매칭하여 가중 DCA를 수행함.
+   - DB 설정을 통해 서버 중단 없이 매수 설정을 유연하게 실시간 변경 가능함.
 
 2. **하락장 가중치 매수 공식 (DcaStrategy)**
    - 전일 종가 대비 당일 현재가 하락률에 비례하여 동적으로 매수 금액을 조율함.
@@ -26,7 +27,7 @@
      - **-5% 이하 하락**: 기본 DCA 금액의 2.0배 매수
 
 3. **안전장치 (Safety Capping & Dry-Run)**
-   - **Max Budget Capping**: 예상 매수 금액이 설정된 일일 한도(`max-daily-budget`)를 초과할 경우, 최대 한도로 자동 캡핑하여 과도한 예수금 소모를 원천 차단함.
+   - **Max Budget Capping**: 예상 매수 금액이 DB에 설정된 일일 한도(`max_daily_budget`)를 초과할 경우, 최대 한도로 자동 캡핑하여 과도한 예수금 소모를 원천 차단함.
    - **Dry-Run Mode**: `dry-run: true` 설정 시 실제 주문 API 호출을 생략하고, 시뮬레이션 결과만 RDBMS에 기록하여 시스템 안전성을 사전 검증함.
 
 4. **트레이서빌리티 (Traceability)**
@@ -45,12 +46,16 @@ src/main/kotlin/com/giri/trader/
 ├── domain/ (도메인 레이어 - 순수 비즈니스 규칙 및 연산 VO)
 │   ├── Money.kt (금융 정밀 연산 VO)
 │   ├── DcaStrategy.kt (가중치 계산 전략)
-│   └── OrderHistory.kt (주문 이력 Entity)
+│   ├── OrderHistory.kt (주문 이력 Entity)
+│   └── DcaConfig.kt (종목별 DCA 설정 Entity)
 ├── application/ (애플리케이션 레이어 - 서비스 조율)
 │   └── DcaTradingService.kt (DCA 전체 워크플로우 제어)
+├── config/ (설정 레이어 - 프로퍼티 바인딩)
+│   └── DcaProperties.kt (전체 스케줄 및 dryRun 설정)
 ├── infrastructure/ (인프라 레이어 - 기술적 구현체 및 외부 API 연동)
 │   ├── persistence/
-│   │   └── OrderHistoryRepository.kt (RDBMS JPA 리포지토리)
+│   │   ├── OrderHistoryRepository.kt (RDBMS 주문 이력 리포지토리)
+│   │   └── DcaConfigRepository.kt (RDBMS 종목 설정 리포지토리)
 │   └── toss/
 │       ├── TossApiConfig.kt (RestClient 타임아웃 및 커넥션 풀 설정)
 │       ├── TossApiClient.kt (토스증권 시세, 계좌, 주문 API 구현체)

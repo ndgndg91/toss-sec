@@ -1,8 +1,9 @@
 package com.giri.trader.application
 
 import com.giri.trader.config.DcaProperties
-import com.giri.trader.config.DcaStockSetting
+import com.giri.trader.domain.DcaConfig
 import com.giri.trader.domain.OrderHistory
+import com.giri.trader.infrastructure.persistence.DcaConfigRepository
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
 import com.giri.trader.infrastructure.toss.*
 import org.junit.jupiter.api.BeforeEach
@@ -25,6 +26,9 @@ class DcaTradingServiceTest {
     @Mock
     private lateinit var orderHistoryRepository: OrderHistoryRepository
 
+    @Mock
+    private lateinit var dcaConfigRepository: DcaConfigRepository
+
     private lateinit var dcaTradingService: DcaTradingService
 
     @BeforeEach
@@ -32,9 +36,6 @@ class DcaTradingServiceTest {
         val properties = DcaProperties(
             defaultBaseAmount = BigDecimal("10000.00"),
             defaultMaxDailyBudget = BigDecimal("15000.00"),
-            settings = mapOf(
-                "AAPL" to DcaStockSetting(BigDecimal("10000.00"), BigDecimal("15000.00"))
-            ),
             cron = "0 0 0 * * TUE-SAT",
             dryRun = false
         )
@@ -42,6 +43,7 @@ class DcaTradingServiceTest {
         dcaTradingService = DcaTradingService(
             tossApiClient = tossApiClient,
             orderHistoryRepository = orderHistoryRepository,
+            dcaConfigRepository = dcaConfigRepository,
             dcaProperties = properties
         )
     }
@@ -57,6 +59,9 @@ class DcaTradingServiceTest {
                 )
             )
         )
+        val mockConfigs = listOf(
+            DcaConfig("AAPL", BigDecimal("10000.00"), BigDecimal("15000.00"))
+        )
         val mockPriceResponse = TossPriceResponse(
             ticker = "AAPL",
             currentPrice = BigDecimal("96.00"), // -4% 하락
@@ -70,6 +75,7 @@ class DcaTradingServiceTest {
         )
 
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)
+        `when`(dcaConfigRepository.findAllById(listOf("AAPL"))).thenReturn(mockConfigs)
         `when`(tossApiClient.getRealtimePrice("AAPL")).thenReturn(mockPriceResponse)
         `when`(tossApiClient.placeOrder("AAPL", BigDecimal("15000.00"))).thenReturn(mockOrderResponse)
         `when`(orderHistoryRepository.save(any(OrderHistory::class.java))).thenAnswer { it.arguments[0] as OrderHistory }
@@ -79,6 +85,7 @@ class DcaTradingServiceTest {
 
         // then
         verify(tossApiClient).getHoldings()
+        verify(dcaConfigRepository).findAllById(listOf("AAPL"))
         verify(tossApiClient).getRealtimePrice("AAPL")
         verify(tossApiClient).placeOrder("AAPL", BigDecimal("15000.00"))
         verify(orderHistoryRepository).save(any(OrderHistory::class.java)) // PENDING 및 SUCCESS 저장 검증
@@ -95,6 +102,9 @@ class DcaTradingServiceTest {
                 )
             )
         )
+        val mockConfigs = listOf(
+            DcaConfig("AAPL", BigDecimal("10000.00"), BigDecimal("15000.00"))
+        )
         val mockPriceResponse = TossPriceResponse(
             ticker = "AAPL",
             currentPrice = BigDecimal("94.00"), // -6% 하락
@@ -108,6 +118,7 @@ class DcaTradingServiceTest {
         )
 
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)
+        `when`(dcaConfigRepository.findAllById(listOf("AAPL"))).thenReturn(mockConfigs)
         `when`(tossApiClient.getRealtimePrice("AAPL")).thenReturn(mockPriceResponse)
         `when`(tossApiClient.placeOrder("AAPL", BigDecimal("15000.00"))).thenReturn(mockOrderResponse)
         `when`(orderHistoryRepository.save(any(OrderHistory::class.java))).thenAnswer { it.arguments[0] as OrderHistory }
@@ -117,6 +128,7 @@ class DcaTradingServiceTest {
 
         // then
         verify(tossApiClient).getHoldings()
+        verify(dcaConfigRepository).findAllById(listOf("AAPL"))
         verify(tossApiClient).getRealtimePrice("AAPL")
         verify(tossApiClient).placeOrder("AAPL", BigDecimal("15000.00")) // 20000원이 아닌 15000원으로 매수 제한됨 검증
         verify(orderHistoryRepository).save(any(OrderHistory::class.java))

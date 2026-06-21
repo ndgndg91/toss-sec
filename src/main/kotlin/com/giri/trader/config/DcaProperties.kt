@@ -7,7 +7,6 @@ import java.math.BigDecimal
 data class DcaProperties(
     val defaultBaseAmount: BigDecimal = BigDecimal("10000.00"),
     val defaultMaxDailyBudget: BigDecimal = BigDecimal("50000.00"),
-    val settings: Map<String, DcaStockSetting> = emptyMap(),
     val cron: String,
     val dryRun: Boolean
 )

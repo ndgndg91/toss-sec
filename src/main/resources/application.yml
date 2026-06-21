@@ -36,12 +36,4 @@ trader:
     cron: "0 0 0 * * TUE-SAT"
     # 실제 주문을 발송하지 않고 시뮬레이션만 수행하는 옵션 (검증용)
     dry-run: true
-    # 종목별 개별 매수 설정 (Toss 보유 자산과 매핑됨)
-    settings:
-      AAPL:
-        base-amount: 20000.00
-        max-daily-budget: 100000.00
-      TSLA:
-        base-amount: 5000.00
-        max-daily-budget: 25000.00
 
