@@ -27,7 +27,7 @@ jobs:
       - name: Setup Gradle & Run Mock Tests
         uses: gradle/actions/setup-gradle@v3
         with:
-          arguments: test --exclude-tests "*.Actual*Test"
+          arguments: test
 
       # 4. 배포용 Jar 빌드
       - name: Build BootJar

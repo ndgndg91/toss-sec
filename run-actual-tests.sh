@@ -25,17 +25,17 @@ case "$1" in
       echo "Error: SPRING_MAIL_PASSWORD가 설정되지 않았습니다. .env.local 파일을 구성하거나 환경 변수를 주입하세요."
       exit 1
     fi
-    ./gradlew clean test --tests "com.giri.trader.application.MailServiceActualSendTest"
+    ./gradlew clean test -DrunActual=true --tests "com.giri.trader.application.MailServiceActualSendTest"
     ;;
   api)
     if [ -z "$TOSS_SEC_API_KEY" ] || [ -z "$TOSS_SEC_SECRET_KEY" ]; then
       echo "Error: TOSS_SEC_API_KEY 또는 TOSS_SEC_SECRET_KEY가 설정되지 않았습니다. .env.local 파일을 구성하거나 환경 변수를 주입하세요."
       exit 1
     fi
-    ./gradlew clean test --tests "com.giri.trader.infrastructure.toss.TossApiClientActualTest"
+    ./gradlew clean test -DrunActual=true --tests "com.giri.trader.infrastructure.toss.TossApiClientActualTest"
     ;;
   all)
-    ./gradlew clean test \
+    ./gradlew clean test -DrunActual=true \
       --tests "com.giri.trader.application.MailServiceActualSendTest" \
       --tests "com.giri.trader.infrastructure.toss.TossApiClientActualTest"
     ;;

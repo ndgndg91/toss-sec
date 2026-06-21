@@ -46,6 +46,13 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    
+    // 실제 연동 테스트는 -DrunActual=true 또는 -PrunActual=true 환경에서만 가동
+    val runActual = System.getProperty("runActual") == "true" || project.hasProperty("runActual")
+    if (!runActual) {
+        exclude("**/*Actual*")
+    }
+
     // Gradle -D 시스템 프로퍼티를 포크된 테스트 JVM으로 전달
     systemProperties(System.getProperties().mapKeys { it.key.toString() }.filterKeys {
         it.startsWith("TRADER_") || it.startsWith("SPRING_") || it.startsWith("TOSS_")
