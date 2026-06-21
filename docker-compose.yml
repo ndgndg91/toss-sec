@@ -13,15 +13,15 @@ services:
       - ./db-data:/var/lib/postgresql/data
 
   app:
-    build: .
+    image: ghcr.io/ndgndg91/toss-dca-trader:latest
     container_name: toss-dca-trader-app
     restart: always
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/toss_trader
-      SPRING_DATASOURCE_USERNAME: giri
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/toss_trader}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:giri}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:password}
       TOSS_SEC_API_KEY: ${TOSS_SEC_API_KEY}
       TOSS_SEC_SECRET_KEY: ${TOSS_SEC_SECRET_KEY}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
@@ -31,5 +31,3 @@ services:
       TRADER_NOTIFICATION_EMAIL: ${TRADER_NOTIFICATION_EMAIL}
     volumes:
       - ./app-data:/app/data
-    depends_on:
-      - postgres

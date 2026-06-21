@@ -1,7 +1,12 @@
+server:
+  shutdown: graceful
+
 spring:
   threads:
     virtual:
       enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   application:
     name: toss-dca-trader
   datasource:
