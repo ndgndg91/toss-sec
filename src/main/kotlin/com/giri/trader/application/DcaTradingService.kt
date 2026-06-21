@@ -7,6 +7,7 @@ import com.giri.trader.domain.OrderHistory
 import com.giri.trader.infrastructure.persistence.DcaConfigRepository
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
 import com.giri.trader.infrastructure.toss.TossApiClient
+import com.giri.trader.infrastructure.toss.dto.response.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal

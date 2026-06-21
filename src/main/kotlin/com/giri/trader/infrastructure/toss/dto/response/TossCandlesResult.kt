@@ -1,4 +1,4 @@
-package com.giri.trader.infrastructure.toss
+package com.giri.trader.infrastructure.toss.dto.response
 
 data class TossCandlesResult(
     val candles: List<TossCandle>,

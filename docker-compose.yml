@@ -29,5 +29,7 @@ services:
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
       TRADER_NOTIFICATION_EMAIL: ${TRADER_NOTIFICATION_EMAIL}
+    volumes:
+      - ./app-data:/app/data
     depends_on:
       - postgres

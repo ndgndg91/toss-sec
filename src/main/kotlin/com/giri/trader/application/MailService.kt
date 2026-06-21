@@ -2,6 +2,7 @@ package com.giri.trader.application
 
 import com.giri.trader.domain.OrderHistory
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
@@ -9,7 +10,8 @@ import java.time.LocalDate
 
 @Service
 class MailService(
-    private val mailSender: JavaMailSender
+    private val mailSender: JavaMailSender,
+    @param:Value("\${spring.mail.username:}") private val fromEmail: String
 ) {
     private val log = LoggerFactory.getLogger(MailService::class.java)
 
@@ -23,6 +25,9 @@ class MailService(
             val message = mailSender.createMimeMessage()
             val helper = MimeMessageHelper(message, true, "UTF-8")
             
+            if (fromEmail.isNotBlank()) {
+                helper.setFrom(fromEmail)
+            }
             helper.setTo(to)
             helper.setSubject(subject)
             helper.setText(content, true) // HTML format

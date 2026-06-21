@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import java.math.BigDecimal
 import java.util.UUID
+import com.giri.trader.infrastructure.toss.dto.request.*
+import com.giri.trader.infrastructure.toss.dto.response.*
 
 @Component
 class TossApiClient(

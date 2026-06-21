@@ -6,13 +6,14 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import java.time.Instant
 import java.util.UUID
+import com.giri.trader.infrastructure.toss.dto.response.*
 
 @Component
 class TossTokenManager(
     private val tossRestClient: RestClient,
-    @Value("\${toss.api.client-id}") private val clientId: String,
-    @Value("\${toss.api.client-secret}") private val clientSecret: String,
-    @Value("\${toss.api.base-url}") private val baseUrl: String
+    @param:Value("\${toss.api.client-id}") private val clientId: String,
+    @param:Value("\${toss.api.client-secret}") private val clientSecret: String,
+    @param:Value("\${toss.api.base-url}") private val baseUrl: String
 ) {
     private val log = LoggerFactory.getLogger(TossTokenManager::class.java)
     

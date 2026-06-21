@@ -6,8 +6,11 @@ out/
 
 # Local DB Data (Docker volume mount)
 db-data/
+data/
+*.db
 
 # Local Environment Variables & Credentials
 .envrc
 .env
+.env.local
 local.properties

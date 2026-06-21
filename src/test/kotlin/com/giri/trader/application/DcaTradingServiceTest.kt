@@ -6,6 +6,7 @@ import com.giri.trader.domain.OrderHistory
 import com.giri.trader.infrastructure.persistence.DcaConfigRepository
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
 import com.giri.trader.infrastructure.toss.*
+import com.giri.trader.infrastructure.toss.dto.response.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -14,6 +15,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.times
 import org.mockito.junit.jupiter.MockitoExtension
 import java.math.BigDecimal
 
@@ -40,6 +42,7 @@ class DcaTradingServiceTest {
             defaultBaseAmount = BigDecimal("10000.00"),
             defaultMaxDailyBudget = BigDecimal("15000.00"),
             cron = "0 0 0 * * TUE-SAT",
+            collectorCron = "0 */10 22-23,0-4 * * MON-FRI",
             dryRun = false,
             notificationEmail = "giri@example.com"
         )
@@ -51,6 +54,11 @@ class DcaTradingServiceTest {
             mailService = mailService,
             dcaProperties = properties
         )
+    }
+
+    private fun <T> anyNonNull(default: T): T {
+        any<T>()
+        return default
     }
 
     @Test
@@ -79,11 +87,19 @@ class DcaTradingServiceTest {
             )
         )
 
+        val defaultHistory = OrderHistory(
+            ticker = "AAPL",
+            orderAmount = BigDecimal.ZERO,
+            currentPrice = BigDecimal.ZERO,
+            previousClosePrice = BigDecimal.ZERO,
+            status = "PENDING"
+        )
+
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)
         `when`(dcaConfigRepository.findAllById(listOf("AAPL"))).thenReturn(mockConfigs)
         `when`(tossApiClient.getRealtimePrice("AAPL")).thenReturn(mockPriceResponse)
         `when`(tossApiClient.placeOrder("AAPL", BigDecimal("15000.00"))).thenReturn(mockOrderResponse)
-        `when`(orderHistoryRepository.save(any(OrderHistory::class.java))).thenAnswer { it.arguments[0] as OrderHistory }
+        `when`(orderHistoryRepository.save(anyNonNull(defaultHistory))).thenAnswer { it.arguments[0] as OrderHistory }
 
         // when
         dcaTradingService.executeDcaOrder()
@@ -93,7 +109,7 @@ class DcaTradingServiceTest {
         verify(dcaConfigRepository).findAllById(listOf("AAPL"))
         verify(tossApiClient).getRealtimePrice("AAPL")
         verify(tossApiClient).placeOrder("AAPL", BigDecimal("15000.00"))
-        verify(orderHistoryRepository).save(any(OrderHistory::class.java)) // PENDING 및 SUCCESS 저장 검증
+        verify(orderHistoryRepository, times(2)).save(anyNonNull(defaultHistory)) // PENDING 및 SUCCESS 저장 검증
     }
 
     @Test
@@ -122,11 +138,19 @@ class DcaTradingServiceTest {
             )
         )
 
+        val defaultHistory = OrderHistory(
+            ticker = "AAPL",
+            orderAmount = BigDecimal.ZERO,
+            currentPrice = BigDecimal.ZERO,
+            previousClosePrice = BigDecimal.ZERO,
+            status = "PENDING"
+        )
+
         `when`(tossApiClient.getHoldings()).thenReturn(mockHoldings)
         `when`(dcaConfigRepository.findAllById(listOf("AAPL"))).thenReturn(mockConfigs)
         `when`(tossApiClient.getRealtimePrice("AAPL")).thenReturn(mockPriceResponse)
         `when`(tossApiClient.placeOrder("AAPL", BigDecimal("15000.00"))).thenReturn(mockOrderResponse)
-        `when`(orderHistoryRepository.save(any(OrderHistory::class.java))).thenAnswer { it.arguments[0] as OrderHistory }
+        `when`(orderHistoryRepository.save(anyNonNull(defaultHistory))).thenAnswer { it.arguments[0] as OrderHistory }
 
         // when
         dcaTradingService.executeDcaOrder()
@@ -136,6 +160,6 @@ class DcaTradingServiceTest {
         verify(dcaConfigRepository).findAllById(listOf("AAPL"))
         verify(tossApiClient).getRealtimePrice("AAPL")
         verify(tossApiClient).placeOrder("AAPL", BigDecimal("15000.00")) // 20000원이 아닌 15000원으로 매수 제한됨 검증
-        verify(orderHistoryRepository).save(any(OrderHistory::class.java))
+        verify(orderHistoryRepository, times(2)).save(anyNonNull(defaultHistory))
     }
 }
