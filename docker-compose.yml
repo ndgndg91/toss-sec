@@ -9,5 +9,18 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: toss_trader
     volumes:
-      # 프로젝트 루트 하위의 db-data 디렉토리에 데이터 영속화
       - ./db-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: toss-dca-trader-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/toss_trader
+      SPRING_DATASOURCE_USERNAME: giri
+      SPRING_DATASOURCE_PASSWORD: password
+      TOSS_SEC_API_KEY: ${TOSS_SEC_API_KEY}
+      TOSS_SEC_SECRET_KEY: ${TOSS_SEC_SECRET_KEY}
+    depends_on:
+      - postgres
