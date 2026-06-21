@@ -1,5 +1,7 @@
 package com.giri.trader.application
 
+import com.giri.trader.config.DcaProperties
+import com.giri.trader.config.DcaStockSetting
 import com.giri.trader.domain.OrderHistory
 import com.giri.trader.infrastructure.persistence.OrderHistoryRepository
 import com.giri.trader.infrastructure.toss.*
@@ -27,13 +29,20 @@ class DcaTradingServiceTest {
 
     @BeforeEach
     fun setUp() {
-        // Base Amount = 10000.00, Max Daily Budget = 15000.00 설정, dryRun = false
+        val properties = DcaProperties(
+            defaultBaseAmount = BigDecimal("10000.00"),
+            defaultMaxDailyBudget = BigDecimal("15000.00"),
+            settings = mapOf(
+                "AAPL" to DcaStockSetting(BigDecimal("10000.00"), BigDecimal("15000.00"))
+            ),
+            cron = "0 0 0 * * TUE-SAT",
+            dryRun = false
+        )
+
         dcaTradingService = DcaTradingService(
             tossApiClient = tossApiClient,
             orderHistoryRepository = orderHistoryRepository,
-            baseAmountRaw = 10000.00,
-            maxDailyBudgetRaw = 15000.00,
-            dryRun = false
+            dcaProperties = properties
         )
     }
 
