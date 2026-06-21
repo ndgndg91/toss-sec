@@ -44,7 +44,7 @@ class TossApiClient(
         log.info("Fetching price for ticker: {} [traceId: {}]", ticker, traceId)
 
         val response = tossRestClient.get()
-            .uri("${baseUrl}/v1/market/realtime-price?ticker=$ticker")
+            .uri("${baseUrl}/v1/market/price?ticker=$ticker")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .retrieve()
