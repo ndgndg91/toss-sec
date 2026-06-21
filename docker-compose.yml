@@ -13,7 +13,7 @@ services:
       - ./db-data:/var/lib/postgresql/data
 
   app:
-    image: ghcr.io/ndgndg91/toss-dca-trader:latest
+    image: ghcr.io/ndgndg91/toss-sec:latest
     container_name: toss-dca-trader-app
     restart: always
     ports:
