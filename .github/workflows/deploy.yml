@@ -68,6 +68,6 @@ jobs:
             cd ~/toss-dca-trader
             git pull origin main
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose pull app
-            docker compose up -d app
+            docker-compose pull app
+            docker-compose up -d app
             docker image prune -f
