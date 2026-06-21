@@ -22,7 +22,7 @@ class TossApiClient(
         log.info("Fetching holding stocks [traceId: {}]", traceId)
 
         val response = tossRestClient.get()
-            .uri("${baseUrl}/v1/trading/holdings")
+            .uri("${baseUrl}/api/v1/holdings")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .retrieve()
@@ -41,23 +41,44 @@ class TossApiClient(
         val traceId = UUID.randomUUID().toString()
         val token = tokenManager.getAccessToken()
 
-        log.info("Fetching price for ticker: {} [traceId: {}]", ticker, traceId)
+        log.info("Fetching real-time price and candles for ticker: {} [traceId: {}]", ticker, traceId)
 
-        val response = tossRestClient.get()
-            .uri("${baseUrl}/v1/market/price?ticker=$ticker")
+        // 1. 현재가 조회 API 호출
+        val priceApiResponse = tossRestClient.get()
+            .uri("${baseUrl}/api/v1/prices?symbols=$ticker")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .retrieve()
-            .body(TossPriceResponse::class.java)
+            .body(TossPricesApiDto::class.java)
 
-        if (response != null) {
-            log.info("Price fetched for {}: Current={}, PrevClose={} [traceId: {}]", 
-                ticker, response.currentPrice, response.previousClosePrice, traceId)
-            return response
+        val currentPrice = priceApiResponse?.result?.firstOrNull()?.lastPrice
+            ?: throw IllegalStateException("Failed to fetch last price for ticker: $ticker")
+
+        // 2. 전일 종가 획득을 위해 일봉 캔들 조회 API 호출
+        val candlesApiResponse = tossRestClient.get()
+            .uri("${baseUrl}/api/v1/candles?symbol=$ticker&interval=1d&count=2")
+            .header("Authorization", "Bearer $token")
+            .header("traceId", traceId)
+            .retrieve()
+            .body(TossCandlesResponse::class.java)
+
+        val candles = candlesApiResponse?.result?.candles
+        val previousClosePrice = if (candles != null && candles.size >= 2) {
+            // index 1이 전일 일봉
+            candles[1].closePrice
         } else {
-            log.error("Failed to retrieve price data (empty response) [traceId: {}]", traceId)
-            throw IllegalStateException("Empty response from Toss Market API for ticker: $ticker")
+            log.warn("Insufficient daily candles for ticker: {}. Falling back to last price as prev close.", ticker)
+            currentPrice
         }
+
+        log.info("Price query success. Symbol: {}, Current: {}, Previous Close: {} [traceId: {}]", 
+            ticker, currentPrice, previousClosePrice, traceId)
+
+        return TossPriceResponse(
+            ticker = ticker,
+            currentPrice = currentPrice,
+            previousClosePrice = previousClosePrice
+        )
     }
 
     fun placeOrder(ticker: String, amount: BigDecimal): TossOrderResponse {
@@ -73,8 +94,9 @@ class TossApiClient(
             priceType = "MARKET"
         )
 
+        // 주문 엔드포인트도 실제 스펙에 맞춰 /api/v1/orders로 매핑
         val response = tossRestClient.post()
-            .uri("${baseUrl}/v1/trading/order")
+            .uri("${baseUrl}/api/v1/orders")
             .header("Authorization", "Bearer $token")
             .header("traceId", traceId)
             .body(requestBody)
